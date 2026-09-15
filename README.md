@@ -62,7 +62,10 @@ venv\Scripts\python.exe scrnshr.py
    total is cumulative for the session, so it still reflects someone who
    connected briefly and left — handy for noticing if more people accessed
    the share than you expected.
-4. Click **Stop Sharing** to end it (or just close the control panel).
+4. Click **Stop Sharing** to end it (or just close the control panel). Viewers
+   immediately see a plain "Sharing has ended" placeholder — the last real
+   frame is overwritten in memory, not left sitting there for anyone still
+   connected.
 
 You can switch between **Region** and **Window** at any time, including while
 already sharing — click the other mode (and pick a window, if switching to

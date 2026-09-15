@@ -18,7 +18,7 @@ from ctypes import wintypes
 import mss
 import qrcode
 from flask import Flask, Response, abort, redirect, render_template_string, request
-from PIL import Image, ImageTk
+from PIL import Image, ImageDraw, ImageFont, ImageTk
 
 _APP_DIR = os.path.dirname(os.path.abspath(__file__))
 ICON_PATH = os.path.join(_APP_DIR, "icon.ico")
@@ -193,6 +193,26 @@ class FrameBuffer:
             if self._version == last_seen_version:
                 self._condition.wait(timeout=timeout)
             return self._jpeg, self._version
+
+
+def make_ended_placeholder_jpeg():
+    """A neutral 'sharing has ended' frame, so a viewer's last frame in the buffer is
+    never a stale, possibly-sensitive screenshot of the host's real screen."""
+    size = (640, 360)
+    img = Image.new("RGB", size, (17, 17, 17))  # matches the viewer page's own dark background
+    draw = ImageDraw.Draw(img)
+    text = "Sharing has ended"
+    try:
+        font = ImageFont.truetype("segoeui.ttf", 28)
+    except OSError:
+        font = ImageFont.load_default()
+    bbox = draw.textbbox((0, 0), text, font=font)
+    x = (size[0] - (bbox[2] - bbox[0])) / 2
+    y = (size[1] - (bbox[3] - bbox[1])) / 2
+    draw.text((x, y), text, fill=(170, 170, 170), font=font)
+    buffer = io.BytesIO()
+    img.save(buffer, format="JPEG", quality=80)
+    return buffer.getvalue()
 
 
 class CaptureWorker(threading.Thread):
@@ -578,6 +598,9 @@ class SharedState:
         if self.capture_worker is not None:
             self.capture_worker.join(timeout=2)
             self.capture_worker = None
+            # Only safe to overwrite the buffer once the worker has actually stopped writing -
+            # otherwise an in-flight last frame could land after this and undo it.
+            self.frame_buffer.update(make_ended_placeholder_jpeg())
 
 
 # ============================================================
