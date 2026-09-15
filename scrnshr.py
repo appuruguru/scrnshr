@@ -508,7 +508,7 @@ def create_app(state):
             return render_template_string(
                 JOIN_HTML, app_name=APP_NAME, code_length=CODE_LENGTH, error="That code didn't work."
             )
-        return redirect(f"/view?code={code.strip().upper()}")
+        return redirect(f"/view?code={state.code}")  # already proven == code by check_code() above
 
     @app.route("/view")
     def view():
